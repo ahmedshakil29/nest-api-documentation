@@ -13,9 +13,11 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { RedisModule } from '@nestjs-modules/ioredis';
 const logger = new Logger('MongoDB');
-
+import { TasksModule } from './tasks/tasks.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
+    ScheduleModule.forRoot(), // <-- REQUIRED for tasks
     MongooseModule.forRootAsync({
       useFactory: async () => {
         const uri = 'mongodb://localhost:27017/foodio';
@@ -49,6 +51,8 @@ const logger = new Logger('MongoDB');
     // Async config to log after connection
 
     UsersModule,
+
+    TasksModule,
   ],
   providers: [
     {
