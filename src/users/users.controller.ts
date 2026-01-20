@@ -16,42 +16,103 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Throttle({ medium: { limit: 20, ttl: 10_000 } })
+  // Get all users
+  @Throttle({ medium: { limit: 20, ttl: 10 } }) // TTL in seconds
   @Get()
   findAll() {
     return this.usersService.findAll();
   }
 
-  @Throttle({ medium: { limit: 20, ttl: 10_000 } })
+  // Get one user by ID
+  @Throttle({ medium: { limit: 20, ttl: 10 } })
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
-  @Throttle({ short: { limit: 1, ttl: 1000 } })
+  // Create user
+  @Throttle({ short: { limit: 1, ttl: 1 } })
   @Post()
   create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
 
-  @Throttle({ medium: { limit: 10, ttl: 10_000 } })
+  // Update user
+  @Throttle({ medium: { limit: 10, ttl: 10 } })
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
   }
 
-  @Throttle({ short: { limit: 2, ttl: 1000 } })
+  // Delete user
+  @Throttle({ short: { limit: 2, ttl: 1 } })
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
 
+  // Health check
   @SkipThrottle()
   @Get('health/check')
   health() {
     return { status: 'ok' };
   }
 }
+
+// import {
+//   Controller,
+//   Get,
+//   Post,
+//   Patch,
+//   Delete,
+//   Param,
+//   Body,
+// } from '@nestjs/common';
+// import { Throttle, SkipThrottle } from '@nestjs/throttler';
+// import { UsersService } from './users.service';
+// import { CreateUserDto } from './dto/create-user.dto';
+// import { UpdateUserDto } from './dto/update-user.dto';
+
+// @Controller('users')
+// export class UsersController {
+//   constructor(private readonly usersService: UsersService) {}
+
+//   @Throttle({ medium: { limit: 20, ttl: 10_000 } })
+//   @Get()
+//   findAll() {
+//     return this.usersService.findAll();
+//   }
+
+//   @Throttle({ medium: { limit: 20, ttl: 10_000 } })
+//   @Get(':id')
+//   findOne(@Param('id') id: string) {
+//     return this.usersService.findOne(id);
+//   }
+
+//   @Throttle({ short: { limit: 1, ttl: 1000 } })
+//   @Post()
+//   create(@Body() dto: CreateUserDto) {
+//     return this.usersService.create(dto);
+//   }
+
+//   @Throttle({ medium: { limit: 10, ttl: 10_000 } })
+//   @Patch(':id')
+//   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+//     return this.usersService.update(id, dto);
+//   }
+
+//   @Throttle({ short: { limit: 2, ttl: 1000 } })
+//   @Delete(':id')
+//   remove(@Param('id') id: string) {
+//     return this.usersService.remove(id);
+//   }
+
+//   @SkipThrottle()
+//   @Get('health/check')
+//   health() {
+//     return { status: 'ok' };
+//   }
+// }
 
 // import {
 //   Controller,
