@@ -1,0 +1,105 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+} from '@nestjs/common';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Throttle({ medium: { limit: 20, ttl: 10_000 } })
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Throttle({ medium: { limit: 20, ttl: 10_000 } })
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id);
+  }
+
+  @Throttle({ short: { limit: 1, ttl: 1000 } })
+  @Post()
+  create(@Body() dto: CreateUserDto) {
+    return this.usersService.create(dto);
+  }
+
+  @Throttle({ medium: { limit: 10, ttl: 10_000 } })
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(id, dto);
+  }
+
+  @Throttle({ short: { limit: 2, ttl: 1000 } })
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(id);
+  }
+
+  @SkipThrottle()
+  @Get('health/check')
+  health() {
+    return { status: 'ok' };
+  }
+}
+
+// import {
+//   Controller,
+//   Get,
+//   Post,
+//   Body,
+//   Param,
+//   Patch,
+//   Delete,
+// } from '@nestjs/common';
+// import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+// import { UsersService } from './users.service';
+// import { CreateUserDto } from './dto/create-user.dto';
+// import { UpdateUserDto } from './dto/update-user.dto';
+
+// @ApiTags('Users')
+// @Controller('users')
+// export class UsersController {
+//   constructor(private readonly usersService: UsersService) {}
+
+//   @Post()
+//   @ApiOperation({ summary: 'Create a new user' })
+//   create(@Body() dto: CreateUserDto) {
+//     return this.usersService.create(dto);
+//   }
+
+//   @Get()
+//   @ApiOperation({ summary: 'Get all users' })
+//   findAll() {
+//     return this.usersService.findAll();
+//   }
+
+//   @Get(':id')
+//   @ApiOperation({ summary: 'Get user by ID' })
+//   @ApiParam({ name: 'id', example: 1 })
+//   findOne(@Param('id') id: string) {
+//     return this.usersService.findOne(+id);
+//   }
+
+//   @Patch(':id')
+//   @ApiOperation({ summary: 'Update user' })
+//   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+//     return this.usersService.update(+id, dto);
+//   }
+
+//   @Delete(':id')
+//   @ApiOperation({ summary: 'Delete user' })
+//   remove(@Param('id') id: string) {
+//     return this.usersService.remove(+id);
+//   }
+// }
