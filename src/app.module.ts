@@ -11,18 +11,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/users.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-
+import { RedisModule } from '@nestjs-modules/ioredis';
 const logger = new Logger('MongoDB');
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([
-      { name: 'short', ttl: 10000, limit: 3 },
-      { name: 'medium', ttl: 10, limit: 20 },
-      { name: 'long', ttl: 60, limit: 100 },
-    ]),
-
-    // Async config to log after connection
     MongooseModule.forRootAsync({
       useFactory: async () => {
         const uri = 'mongodb://localhost:27017/foodio';
@@ -33,6 +26,27 @@ const logger = new Logger('MongoDB');
         return { uri };
       },
     }),
+    // ✅ Redis Cache (CORRECT)
+    // CacheModule.register({
+    //   isGlobal: true, // 🔥 REQUIRED so CACHE_MANAGER works everywhere
+    //   store: () =>
+    //     new Redis({
+    //       host: '127.0.0.1',
+    //       port: 6379,
+    //     }),
+    //   ttl: 600,
+    // }),
+    RedisModule.forRoot({
+      type: 'single',
+      url: 'redis://localhost:6379',
+    }),
+    ThrottlerModule.forRoot([
+      { name: 'short', ttl: 10000, limit: 3 },
+      { name: 'medium', ttl: 10, limit: 20 },
+      { name: 'long', ttl: 60, limit: 100 },
+    ]),
+
+    // Async config to log after connection
 
     UsersModule,
   ],
