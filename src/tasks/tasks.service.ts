@@ -8,10 +8,6 @@ export class TasksService {
 
   constructor(private readonly usersService: UsersService) {}
 
-  /**
-   * Refresh the Redis cache for all users every 5 minutes.
-   * Uses declarative cron job.
-   */
   @Cron(CronExpression.EVERY_5_MINUTES, {
     name: 'refreshUsersCache',
     timeZone: 'Asia/Dhaka', // adjust to your timezone
@@ -27,17 +23,14 @@ export class TasksService {
     }
   }
 
-  /**
-   * Optional: You can also refresh every X seconds using @Interval
-   */
   @Interval(300000) // every 5 minutes = 300,000 ms
   async refreshUsersCacheInterval() {
     try {
       this.logger.log('🔄 [Interval] Refreshing users cache...');
       await this.usersService.findAll();
-      this.logger.log('✅ [Interval] Users cache refreshed successfully');
+      this.logger.log('✅ ✅ [Interval] Users cache refreshed successfully');
     } catch (error) {
-      this.logger.error('❌ [Interval] Error refreshing users cache', error);
+      this.logger.error('❌ ❌ [Interval] Error refreshing users cache', error);
     }
   }
 }
