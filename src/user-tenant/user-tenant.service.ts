@@ -70,3 +70,42 @@ export class UserTenantService {
     return this.userTenantModel.findOne({ userId, tenantId });
   }
 }
+
+//****************************** old */
+// import { Injectable } from '@nestjs/common';
+// import { InjectModel } from '@nestjs/mongoose';
+// import { Model, Types } from 'mongoose';
+// import {
+//   UserTenant,
+//   UserTenantDocument,
+//   TenantStatus,
+// } from '../schemas/user-tenant.schema';
+
+// @Injectable()
+// export class UserTenantService {
+//   constructor(
+//     @InjectModel(UserTenant.name)
+//     private readonly userTenantModel: Model<UserTenantDocument>,
+//   ) {}
+
+//   async getUserTenants(userId: string): Promise<UserTenantDocument[]> {
+//     return this.userTenantModel
+//       .find({
+//         userId: new Types.ObjectId(userId),
+//         status: TenantStatus.ACTIVE,
+//       })
+//       .populate('tenantId')
+//       .exec();
+//   }
+
+//   async getMembership(
+//     userId: string,
+//     tenantId: string,
+//   ): Promise<UserTenantDocument | null> {
+//     return this.userTenantModel.findOne({
+//       userId: new Types.ObjectId(userId),
+//       tenantId: new Types.ObjectId(tenantId),
+//       status: TenantStatus.ACTIVE,
+//     });
+//   }
+// }

@@ -57,6 +57,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     TenantsModule,
 
     UserTenantModule,
+
+    AuthModule,
   ],
   providers: [
     {
@@ -74,6 +76,7 @@ export class AppModule {}
 // import { UsersModule } from './users/users.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { UserTenantModule } from './user-tenant/user-tenant.module';
+import { AuthModule } from './auth/auth.module';
 
 // @Module({
 //   imports: [
