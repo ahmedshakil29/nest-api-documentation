@@ -55,6 +55,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     TasksModule,
 
     TenantsModule,
+
+    UserTenantModule,
   ],
   providers: [
     {
@@ -71,6 +73,7 @@ export class AppModule {}
 // import { MongooseModule } from '@nestjs/mongoose';
 // import { UsersModule } from './users/users.module';
 import { TenantsModule } from './tenants/tenants.module';
+import { UserTenantModule } from './user-tenant/user-tenant.module';
 
 // @Module({
 //   imports: [
