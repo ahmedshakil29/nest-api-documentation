@@ -53,6 +53,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     UsersModule,
 
     TasksModule,
+
+    TenantsModule,
   ],
   providers: [
     {
@@ -68,6 +70,7 @@ export class AppModule {}
 // import { APP_GUARD } from '@nestjs/core';
 // import { MongooseModule } from '@nestjs/mongoose';
 // import { UsersModule } from './users/users.module';
+import { TenantsModule } from './tenants/tenants.module';
 
 // @Module({
 //   imports: [
