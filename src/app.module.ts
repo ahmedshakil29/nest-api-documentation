@@ -62,6 +62,8 @@ import { ConfigModule } from '@nestjs/config';
     PermissionsModule,
 
     RolesModule,
+
+    CategoriesModule,
   ],
   providers: [
     {
@@ -79,6 +81,7 @@ export class AppModule {}
 // import { UsersModule } from './users/users.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
+import { CategoriesModule } from './categories/categories.module';
 
 // @Module({
 //   imports: [
