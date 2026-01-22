@@ -15,6 +15,20 @@ export enum TenantStatus {
   SUSPENDED = 'SUSPENDED',
 }
 
+// @Schema({ timestamps: true })
+// export class UserTenant {
+//   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+//   userId: Types.ObjectId;
+
+//   @Prop({ type: Types.ObjectId, ref: 'Tenant', required: true, index: true })
+//   tenantId: Types.ObjectId;
+
+//   @Prop({ type: String, enum: TenantRole, default: TenantRole.MEMBER })
+//   role: TenantRole;
+
+//   @Prop({ type: String, enum: TenantStatus, default: TenantStatus.ACTIVE })
+//   status: TenantStatus;
+// }
 @Schema({ timestamps: true })
 export class UserTenant {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
@@ -23,8 +37,8 @@ export class UserTenant {
   @Prop({ type: Types.ObjectId, ref: 'Tenant', required: true, index: true })
   tenantId: Types.ObjectId;
 
-  @Prop({ type: String, enum: TenantRole, default: TenantRole.MEMBER })
-  role: TenantRole;
+  @Prop({ type: Types.ObjectId, ref: 'Role', required: true })
+  roleId: Types.ObjectId;
 
   @Prop({ type: String, enum: TenantStatus, default: TenantStatus.ACTIVE })
   status: TenantStatus;
