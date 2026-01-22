@@ -1,11 +1,3 @@
-// import { Module } from '@nestjs/common';
-// import { MongooseModule } from '@nestjs/mongoose';
-
-// @Module({
-//   imports: [MongooseModule.forRoot('mongodb://localhost:27017/foodio')],
-// })
-// export class AppModule {}
-
 import { Module, Logger } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/users.module';
@@ -15,8 +7,16 @@ import { RedisModule } from '@nestjs-modules/ioredis';
 const logger = new Logger('MongoDB');
 import { TasksModule } from './tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { TenantsModule } from './tenants/tenants.module';
+import { UserTenantModule } from './user-tenant/user-tenant.module';
+import { AuthModule } from './auth/auth.module';
+import { ConfigModule } from '@nestjs/config';
+
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true, // 🔥 THIS is what you were asking about
+    }),
     ScheduleModule.forRoot(), // <-- REQUIRED for tasks
     MongooseModule.forRootAsync({
       useFactory: async () => {
@@ -49,6 +49,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ]),
 
     // Async config to log after connection
+    AuthModule,
 
     UsersModule,
 
@@ -57,8 +58,6 @@ import { ScheduleModule } from '@nestjs/schedule';
     TenantsModule,
 
     UserTenantModule,
-
-    AuthModule,
   ],
   providers: [
     {
@@ -74,9 +73,6 @@ export class AppModule {}
 // import { APP_GUARD } from '@nestjs/core';
 // import { MongooseModule } from '@nestjs/mongoose';
 // import { UsersModule } from './users/users.module';
-import { TenantsModule } from './tenants/tenants.module';
-import { UserTenantModule } from './user-tenant/user-tenant.module';
-import { AuthModule } from './auth/auth.module';
 
 // @Module({
 //   imports: [

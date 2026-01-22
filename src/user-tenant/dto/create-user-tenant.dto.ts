@@ -4,11 +4,11 @@ import { TenantRole, TenantStatus } from '../../schemas/user-tenant.schema';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserTenantDto {
-  @ApiProperty({ example: '64f...abc' })
+  @ApiProperty({ example: '696f243385fe0261215ff221' })
   @IsMongoId()
   userId: string;
 
-  @ApiProperty({ example: '64f...xyz' })
+  @ApiProperty({ example: '69706169a89bd2f4938514c9' })
   @IsMongoId()
   tenantId: string;
 
