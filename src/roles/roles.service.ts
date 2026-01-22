@@ -60,4 +60,11 @@ export class RolesService {
     if (!role) throw new NotFoundException('Role not found');
     return { message: 'Role deleted successfully' };
   }
+
+  async findByIdWithPermissions(roleId: string) {
+    return this.roleModel
+      .findById(roleId)
+      .populate('permissionIds') // Permission documents
+      .lean();
+  }
 }
