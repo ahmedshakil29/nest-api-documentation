@@ -7,9 +7,9 @@ export class RefreshDto {
   @IsString()
   userId: string;
 
-  @ApiProperty({ example: '69706169a89bd2f4938514c9' })
-  @IsString()
-  tenantId: string;
+  // @ApiProperty({ example: '69706169a89bd2f4938514c9' })
+  // @IsString()
+  // tenantId: string;
 
   @ApiProperty({ example: 'eyJhbGc.......iOiJIUz' })
   @IsString()

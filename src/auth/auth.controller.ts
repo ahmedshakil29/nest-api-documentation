@@ -1,7 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { SwitchTenantDto } from './dto/switch-tenant.dto';
+// import { SwitchTenantDto } from './dto/switch-tenant.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { LogoutDto } from './dto/logout.dto';
 
@@ -20,10 +20,10 @@ export class AuthController {
   /**
    * STEP 2: Switch tenant → issue access + refresh token
    */
-  @Post('switch-tenant')
-  switchTenant(@Body() dto: SwitchTenantDto) {
-    return this.authService.switchTenant(dto);
-  }
+  // @Post('switch-tenant')
+  // switchTenant(@Body() dto: SwitchTenantDto) {
+  //   return this.authService.switchTenant(dto);
+  // }
 
   /**
    * STEP 3: Refresh access token
@@ -45,7 +45,7 @@ export class AuthController {
   // }
   @Post('refresh')
   refresh(@Body() dto: RefreshDto) {
-    return this.authService.refresh(dto.userId, dto.tenantId, dto.refreshToken);
+    return this.authService.refresh(dto.userId, dto.refreshToken);
   }
 
   @Post('logout')

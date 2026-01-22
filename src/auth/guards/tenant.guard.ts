@@ -4,35 +4,67 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
+import { UserTenantService } from 'src/user-tenant/user-tenant.service';
+import { TenantStatus } from '../../schemas/user-tenant.schema';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
+  constructor(private userTenantService: UserTenantService) {}
 
-    const user = request.user; // from JwtAuthGuard
-    if (!user || !user.tenantId) {
-      throw new ForbiddenException('Tenant not found in token');
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest();
+    const userId = req.user.sub;
+    const tenantId = req.headers['x-tenant-id'];
+
+    if (!tenantId) {
+      throw new ForbiddenException('Tenant not specified');
     }
 
-    // OPTIONAL: if tenantId comes from request
-    const tenantIdFromRequest =
-      request.params?.tenantId ||
-      request.body?.tenantId ||
-      request.headers['x-tenant-id'];
+    const membership = await this.userTenantService.getMembership(
+      userId,
+      tenantId,
+    );
 
-    // If route doesn't specify tenant → allow
-    if (!tenantIdFromRequest) {
-      return true;
+    // if (!membership || membership.status !== 'ACTIVE') {
+    //   throw new ForbiddenException('Unauthorized tenant');
+    // }
+    if (!membership || membership.status !== TenantStatus.ACTIVE) {
+      throw new ForbiddenException('Unauthorized tenant');
     }
 
-    if (tenantIdFromRequest !== user.tenantId) {
-      throw new ForbiddenException('Access denied for this tenant');
-    }
-
+    req.tenant = membership; // 🔥 required for PermissionGuard
     return true;
   }
 }
+
+// @Injectable()
+// export class TenantGuard implements CanActivate {
+//   canActivate(context: ExecutionContext): boolean {
+//     const request = context.switchToHttp().getRequest();
+
+//     const user = request.user; // from JwtAuthGuard
+//     if (!user || !user.tenantId) {
+//       throw new ForbiddenException('Tenant not found in token');
+//     }
+
+//     // OPTIONAL: if tenantId comes from request
+//     const tenantIdFromRequest =
+//       request.params?.tenantId ||
+//       request.body?.tenantId ||
+//       request.headers['x-tenant-id'];
+
+//     // If route doesn't specify tenant → allow
+//     if (!tenantIdFromRequest) {
+//       return true;
+//     }
+
+//     if (tenantIdFromRequest !== user.tenantId) {
+//       throw new ForbiddenException('Access denied for this tenant');
+//     }
+
+//     return true;
+//   }
+// }
 
 // import {
 //   CanActivate,
