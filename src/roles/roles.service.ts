@@ -15,6 +15,12 @@ export class RolesService {
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
   ) {}
 
+  async findByName(name: string): Promise<RoleDocument | null> {
+    return this.roleModel.findOne({
+      name: name.toUpperCase(),
+    });
+  }
+
   async create(dto: CreateRoleDto) {
     const exists = await this.roleModel.findOne({
       name: dto.name.toUpperCase(),

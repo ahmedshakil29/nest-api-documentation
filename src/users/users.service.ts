@@ -76,7 +76,7 @@ export class UsersService {
     // 1️⃣ Check Redis first
     const cached = await this.redis.get(cacheKey);
     if (cached) {
-      console.log('🔹 Returning users from Redis cache');
+      console.log('🔹 Returning users from Redis cache.');
       return JSON.parse(cached);
     }
 

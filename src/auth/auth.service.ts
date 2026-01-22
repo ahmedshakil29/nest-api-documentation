@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+// src/auth/auth.service.ts
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
@@ -6,25 +11,101 @@ import * as bcrypt from 'bcryptjs';
 
 import { UsersService } from '../users/users.service';
 import { UserTenantService } from '../user-tenant/user-tenant.service';
-// import { TenantStatus } from '../schemas/user-tenant.schema';
+import { TenantsService } from '../tenants/tenants.service';
+import { RolesService } from '../roles/roles.service';
+
 import { JwtPayload } from './types/jwt-payload.type';
 import { LoginDto } from './dto/login.dto';
-// import { SwitchTenantDto } from './dto/switch-tenant.dto';
+import { SignupDto } from './dto/signup.dto';
+
 @Injectable()
 export class AuthService {
-  private readonly ACCESS_TTL = '1h'; // user-level token
+  private readonly ACCESS_TTL = '1h';
   private readonly REFRESH_TTL = 60 * 60 * 24 * 7; // 7 days
 
   constructor(
     private readonly usersService: UsersService,
     private readonly userTenantService: UserTenantService,
+    private readonly tenantsService: TenantsService,
+    private readonly rolesService: RolesService,
     private readonly jwtService: JwtService,
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
   /**
-   * STEP 1: Login → generate a JWT immediately
-   * JWT is user-level (no tenantId)
+   * ========================
+   * SIGNUP
+   * ========================
+   */
+  async signup(dto: SignupDto) {
+    // 1️⃣ Email uniqueness
+    const existingUser = await this.usersService.findByEmail(dto.email);
+    if (existingUser) {
+      throw new BadRequestException('Email already exists');
+    }
+
+    // 2️⃣ Hash password
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    // 3️⃣ Create user
+    const user = await this.usersService.create({
+      name: dto.name,
+      email: dto.email,
+      password: hashedPassword,
+    });
+
+    let tenant = null;
+
+    // 4️⃣ Optional tenant creation
+    if (dto.tenantName && dto.tenantDomain) {
+      const existingTenant = await this.tenantsService.findByDomain(
+        dto.tenantDomain,
+      );
+      if (existingTenant) {
+        throw new BadRequestException('Tenant domain already exists');
+      }
+
+      // Create tenant
+      tenant = await this.tenantsService.create({
+        name: dto.tenantName,
+        domain: dto.tenantDomain,
+      });
+
+      // Fetch OWNER role
+      const ownerRole = await this.rolesService.findByName('SUPERADMIN');
+      if (!ownerRole) {
+        throw new BadRequestException('OWNER role not configured');
+      }
+
+      // Create user-tenant mapping
+      await this.userTenantService.assignUser({
+        userId: user._id,
+        tenantId: tenant._id,
+        roleId: ownerRole._id,
+      });
+    }
+
+    return {
+      message: 'Signup successful. Please login.',
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+      },
+      tenant: tenant
+        ? {
+            id: tenant._id,
+            name: tenant.name,
+            domain: tenant.domain,
+          }
+        : null,
+    };
+  }
+
+  /**
+   * ========================
+   * LOGIN
+   * ========================
    */
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
@@ -33,12 +114,11 @@ export class AuthService {
     const validPassword = await bcrypt.compare(dto.password, user.password);
     if (!validPassword) throw new UnauthorizedException('Invalid credentials');
 
-    // Fetch all tenants for user
+    // Fetch tenants
     const tenants = await this.userTenantService.getUserTenants(
       user._id.toString(),
     );
 
-    // JWT payload WITHOUT tenantId
     const payload: JwtPayload = {
       sub: user._id.toString(),
       email: user.email,
@@ -49,7 +129,6 @@ export class AuthService {
       expiresIn: this.ACCESS_TTL,
     });
 
-    // Optionally, store refresh token in Redis
     const refreshToken = this.jwtService.sign(
       { sub: user._id.toString(), type: 'refresh' },
       { expiresIn: this.REFRESH_TTL },
@@ -62,21 +141,6 @@ export class AuthService {
       this.REFRESH_TTL,
     );
 
-    // return {
-    //   accessToken,
-    //   refreshToken,
-    //   user: {
-    //     id: user._id,
-    //     name: user.name,
-    //     email: user.email,
-    //   },
-    //   tenants: tenants.map((t) => ({
-    //     tenantId: t.tenantId.toString(),
-    //     roleId: t.roleId.toString(),
-    //     status: t.status,
-    //   })),
-    //   defaultTenant: tenants[0]?.tenantId.toString() || null,
-    // };
     return {
       accessToken,
       refreshToken,
@@ -96,12 +160,9 @@ export class AuthService {
   }
 
   /**
-   * STEP 2: Tenant switch removed (frontend decides current tenant)
-   * Backend checks tenant membership dynamically per request
-   */
-
-  /**
-   * STEP 3: Refresh access token
+   * ========================
+   * REFRESH TOKEN
+   * ========================
    */
   async refresh(userId: string, refreshToken: string) {
     const storedToken = await this.redis.get(`refresh_token:${userId}`);
@@ -126,13 +187,147 @@ export class AuthService {
   }
 
   /**
-   * STEP 4: Logout
+   * ========================
+   * LOGOUT
+   * ========================
    */
   async logout(userId: string) {
     await this.redis.del(`refresh_token:${userId}`);
-    return { message: 'Logged out from all tenants successfully' };
+    return { message: 'Logged out successfully' };
   }
 }
+
+// import { Injectable, UnauthorizedException } from '@nestjs/common';
+// import { JwtService } from '@nestjs/jwt';
+// import { InjectRedis } from '@nestjs-modules/ioredis';
+// import Redis from 'ioredis';
+// import * as bcrypt from 'bcryptjs';
+
+// import { UsersService } from '../users/users.service';
+// import { UserTenantService } from '../user-tenant/user-tenant.service';
+// // import { TenantStatus } from '../schemas/user-tenant.schema';
+// import { JwtPayload } from './types/jwt-payload.type';
+// import { LoginDto } from './dto/login.dto';
+// // import { SwitchTenantDto } from './dto/switch-tenant.dto';
+// @Injectable()
+// export class AuthService {
+//   private readonly ACCESS_TTL = '1h'; // user-level token
+//   private readonly REFRESH_TTL = 60 * 60 * 24 * 7; // 7 days
+
+//   constructor(
+//     private readonly usersService: UsersService,
+//     private readonly userTenantService: UserTenantService,
+//     private readonly jwtService: JwtService,
+//     @InjectRedis() private readonly redis: Redis,
+//   ) {}
+
+//   async login(dto: LoginDto) {
+//     const user = await this.usersService.findByEmail(dto.email);
+//     if (!user) throw new UnauthorizedException('Invalid credentials');
+
+//     const validPassword = await bcrypt.compare(dto.password, user.password);
+//     if (!validPassword) throw new UnauthorizedException('Invalid credentials');
+
+//     // Fetch all tenants for user
+//     const tenants = await this.userTenantService.getUserTenants(
+//       user._id.toString(),
+//     );
+
+//     // JWT payload WITHOUT tenantId
+//     const payload: JwtPayload = {
+//       sub: user._id.toString(),
+//       email: user.email,
+//       name: user.name,
+//     };
+
+//     const accessToken = this.jwtService.sign(payload, {
+//       expiresIn: this.ACCESS_TTL,
+//     });
+
+//     // Optionally, store refresh token in Redis
+//     const refreshToken = this.jwtService.sign(
+//       { sub: user._id.toString(), type: 'refresh' },
+//       { expiresIn: this.REFRESH_TTL },
+//     );
+
+//     await this.redis.set(
+//       `refresh_token:${user._id.toString()}`,
+//       refreshToken,
+//       'EX',
+//       this.REFRESH_TTL,
+//     );
+
+//     // return {
+//     //   accessToken,
+//     //   refreshToken,
+//     //   user: {
+//     //     id: user._id,
+//     //     name: user.name,
+//     //     email: user.email,
+//     //   },
+//     //   tenants: tenants.map((t) => ({
+//     //     tenantId: t.tenantId.toString(),
+//     //     roleId: t.roleId.toString(),
+//     //     status: t.status,
+//     //   })),
+//     //   defaultTenant: tenants[0]?.tenantId.toString() || null,
+//     // };
+//     return {
+//       accessToken,
+//       refreshToken,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//       },
+//       tenants: tenants.map((t) => ({
+//         tenantId: t.tenantId._id.toString(),
+//         tenantName: t.tenantId.name,
+//         role: t.roleId.name,
+//         status: t.status,
+//       })),
+//       defaultTenant: tenants[0]?.tenantId._id.toString() || null,
+//     };
+//   }
+
+//   /**
+//    * STEP 2: Tenant switch removed (frontend decides current tenant)
+//    * Backend checks tenant membership dynamically per request
+//    */
+
+//   /**
+//    * STEP 3: Refresh access token
+//    */
+//   async refresh(userId: string, refreshToken: string) {
+//     const storedToken = await this.redis.get(`refresh_token:${userId}`);
+//     if (!storedToken || storedToken !== refreshToken) {
+//       throw new UnauthorizedException('Invalid refresh token');
+//     }
+
+//     const user = await this.usersService.findById(userId);
+//     if (!user) throw new UnauthorizedException('User not found');
+
+//     const payload: JwtPayload = {
+//       sub: user._id.toString(),
+//       email: user.email,
+//       name: user.name,
+//     };
+
+//     return {
+//       accessToken: this.jwtService.sign(payload, {
+//         expiresIn: this.ACCESS_TTL,
+//       }),
+//     };
+//   }
+
+//   /**
+//    * STEP 4: Logout
+//    */
+//   async logout(userId: string) {
+//     await this.redis.del(`refresh_token:${userId}`);
+//     return { message: 'Logged out from all tenants successfully' };
+//   }
+// }
 
 // @Injectable()
 // export class AuthService {

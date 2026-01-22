@@ -17,6 +17,12 @@ export class TenantsService {
     private readonly tenantModel: Model<TenantDocument>,
   ) {}
 
+  async findByDomain(domain: string): Promise<TenantDocument | null> {
+    return this.tenantModel.findOne({
+      domain: domain.toLowerCase(),
+      isDeleted: false,
+    });
+  }
   // ✅ Create Tenant
   async create(createTenantDto: CreateTenantDto): Promise<Tenant> {
     // Normalize domain
