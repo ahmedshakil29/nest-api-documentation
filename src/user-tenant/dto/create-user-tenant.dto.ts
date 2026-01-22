@@ -8,9 +8,9 @@ export class CreateUserTenantDto {
   @IsMongoId()
   userId: string;
 
-  @ApiProperty({ example: '69706169a89bd2f4938514c9' })
-  @IsMongoId()
-  tenantId: string;
+  // @ApiProperty({ example: '69706169a89bd2f4938514c9' })
+  // @IsMongoId()
+  // tenantId: string;
 
   @ApiProperty({ example: '69706169a89bd2f4938514c9' })
   @IsMongoId()

@@ -1,4 +1,3 @@
-// src/user-tenant/user-tenant.service.ts
 import {
   Injectable,
   ConflictException,
@@ -22,22 +21,36 @@ export class UserTenantService {
   ) {}
 
   // ✅ Assign user to tenant
-  async assignUser(dto: CreateUserTenantDto): Promise<UserTenant> {
-    try {
-      const membership = new this.userTenantModel({
-        userId: new Types.ObjectId(dto.userId),
-        tenantId: new Types.ObjectId(dto.tenantId),
-        roleId: new Types.ObjectId(dto.roleId),
-        status: dto.status || TenantStatus.ACTIVE,
-      });
+  // async assignUser(dto: CreateUserTenantDto): Promise<UserTenant> {
+  //   try {
+  //     const membership = new this.userTenantModel({
+  //       userId: new Types.ObjectId(dto.userId),
+  //       tenantId: new Types.ObjectId(dto.tenantId),
+  //       roleId: new Types.ObjectId(dto.roleId),
+  //       status: dto.status || TenantStatus.ACTIVE,
+  //     });
 
-      return await membership.save();
-    } catch (error: any) {
-      if (error.code === 11000) {
-        throw new ConflictException('User is already assigned to this tenant');
-      }
-      throw error;
-    }
+  //     return await membership.save();
+  //   } catch (error: any) {
+  //     if (error.code === 11000) {
+  //       throw new ConflictException('User is already assigned to this tenant');
+  //     }
+  //     throw error;
+  //   }
+  // }
+  async assignUser(
+    dto: CreateUserTenantDto,
+    tenantIdFromHeader: string,
+  ): Promise<UserTenant> {
+    const membership = new this.userTenantModel({
+      userId: new Types.ObjectId(dto.userId),
+      // tenantId: new Types.ObjectId(tenantIdFromHeader), // use header
+      tenantId: new Types.ObjectId(tenantIdFromHeader || dto.tenantId), // fallback
+      roleId: new Types.ObjectId(dto.roleId),
+      status: dto.status || TenantStatus.ACTIVE,
+    });
+
+    return membership.save();
   }
 
   // ✅ Fetch active tenants for a user
@@ -45,7 +58,7 @@ export class UserTenantService {
     return this.userTenantModel
       .find({ userId: new Types.ObjectId(userId), status: TenantStatus.ACTIVE })
       .populate('tenantId', 'name domain')
-      .populate('roleId', 'name')
+      .populate('roleId', 'name permissionIds')
       .select('roleId tenantId status');
   }
 
@@ -61,7 +74,7 @@ export class UserTenantService {
         { new: true, runValidators: true },
       )
       .populate('tenantId', 'name domain')
-      .populate('roleId', 'name');
+      .populate('roleId', 'name permissionIds');
 
     if (!membership) throw new NotFoundException('Membership not found');
     return membership;
@@ -81,9 +94,96 @@ export class UserTenantService {
         tenantId: new Types.ObjectId(tenantId),
       })
       .populate('tenantId', 'name domain')
-      .populate('roleId', 'name');
+      .populate('roleId', 'name permissionIds');
   }
 }
+
+// // src/user-tenant/user-tenant.service.ts
+// import {
+//   Injectable,
+//   ConflictException,
+//   NotFoundException,
+// } from '@nestjs/common';
+// import { InjectModel } from '@nestjs/mongoose';
+// import { Model, Types } from 'mongoose';
+// import {
+//   UserTenant,
+//   UserTenantDocument,
+//   TenantStatus,
+// } from '../schemas/user-tenant.schema';
+// import { CreateUserTenantDto } from './dto/create-user-tenant.dto';
+// import { UpdateUserTenantDto } from './dto/update-user-tenant.dto';
+
+// @Injectable()
+// export class UserTenantService {
+//   constructor(
+//     @InjectModel(UserTenant.name)
+//     private readonly userTenantModel: Model<UserTenantDocument>,
+//   ) {}
+
+//   // ✅ Assign user to tenant
+//   async assignUser(dto: CreateUserTenantDto): Promise<UserTenant> {
+//     try {
+//       const membership = new this.userTenantModel({
+//         userId: new Types.ObjectId(dto.userId),
+//         tenantId: new Types.ObjectId(dto.tenantId),
+//         roleId: new Types.ObjectId(dto.roleId),
+//         status: dto.status || TenantStatus.ACTIVE,
+//       });
+
+//       return await membership.save();
+//     } catch (error: any) {
+//       if (error.code === 11000) {
+//         throw new ConflictException('User is already assigned to this tenant');
+//       }
+//       throw error;
+//     }
+//   }
+
+//   // ✅ Fetch active tenants for a user
+//   async getUserTenants(userId: string) {
+//     return this.userTenantModel
+//       .find({ userId: new Types.ObjectId(userId), status: TenantStatus.ACTIVE })
+//       .populate('tenantId', 'name domain')
+//       .populate('roleId', 'name')
+//       .select('roleId tenantId status');
+//   }
+
+//   // ✅ Update membership
+//   async update(id: string, dto: UpdateUserTenantDto): Promise<UserTenant> {
+//     const membership = await this.userTenantModel
+//       .findByIdAndUpdate(
+//         id,
+//         {
+//           ...dto,
+//           ...(dto.roleId && { roleId: new Types.ObjectId(dto.roleId) }),
+//         },
+//         { new: true, runValidators: true },
+//       )
+//       .populate('tenantId', 'name domain')
+//       .populate('roleId', 'name');
+
+//     if (!membership) throw new NotFoundException('Membership not found');
+//     return membership;
+//   }
+
+//   // ✅ Remove membership (hard delete)
+//   async remove(id: string): Promise<void> {
+//     const membership = await this.userTenantModel.findByIdAndDelete(id);
+//     if (!membership) throw new NotFoundException('Membership not found');
+//   }
+
+//   // ✅ Get specific membership by user + tenant
+//   async getMembership(userId: string, tenantId: string) {
+//     return this.userTenantModel
+//       .findOne({
+//         userId: new Types.ObjectId(userId),
+//         tenantId: new Types.ObjectId(tenantId),
+//       })
+//       .populate('tenantId', 'name domain')
+//       .populate('roleId', 'name');
+//   }
+// }
 
 // // src/user-tenant/user-tenant.service.ts
 // import {

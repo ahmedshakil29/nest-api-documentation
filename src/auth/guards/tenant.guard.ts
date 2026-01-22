@@ -11,9 +11,38 @@ import { TenantStatus } from '../../schemas/user-tenant.schema';
 export class TenantGuard implements CanActivate {
   constructor(private userTenantService: UserTenantService) {}
 
+  // async canActivate(context: ExecutionContext): Promise<boolean> {
+  //   const req = context.switchToHttp().getRequest();
+  //   const userId = req.user.sub;
+  //   const tenantId = req.headers['x-tenant-id'];
+
+  //   if (!tenantId) {
+  //     throw new ForbiddenException('Tenant not specified');
+  //   }
+
+  //   const membership = await this.userTenantService.getMembership(
+  //     userId,
+  //     tenantId,
+  //   );
+
+  //   // if (!membership || membership.status !== 'ACTIVE') {
+  //   //   throw new ForbiddenException('Unauthorized tenant');
+  //   // }
+  //   if (!membership || membership.status !== TenantStatus.ACTIVE) {
+  //     throw new ForbiddenException('Unauthorized tenant');
+  //   }
+
+  //   req.tenant = membership; // 🔥 required for PermissionGuard
+  //   return true;
+  // }
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    const userId = req.user.sub;
+
+    if (!req.user) {
+      throw new ForbiddenException('User not authenticated');
+    }
+
+    const userId = req.user.sub; // JWT payload usually has 'sub' for userId
     const tenantId = req.headers['x-tenant-id'];
 
     if (!tenantId) {
@@ -25,14 +54,11 @@ export class TenantGuard implements CanActivate {
       tenantId,
     );
 
-    // if (!membership || membership.status !== 'ACTIVE') {
-    //   throw new ForbiddenException('Unauthorized tenant');
-    // }
     if (!membership || membership.status !== TenantStatus.ACTIVE) {
       throw new ForbiddenException('Unauthorized tenant');
     }
 
-    req.tenant = membership; // 🔥 required for PermissionGuard
+    req.tenant = membership; // required for PermissionGuard
     return true;
   }
 }

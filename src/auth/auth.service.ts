@@ -45,13 +45,13 @@ export class AuthService {
     }
 
     // 2️⃣ Hash password
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    // const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     // 3️⃣ Create user
     const user = await this.usersService.create({
       name: dto.name,
       email: dto.email,
-      password: hashedPassword,
+      password: dto.password,
     });
 
     let tenant = null;
