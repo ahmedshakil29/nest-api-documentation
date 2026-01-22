@@ -1,6 +1,6 @@
 // src/user-tenant/dto/create-user-tenant.dto.ts
 import { IsMongoId, IsEnum, IsOptional } from 'class-validator';
-import { TenantRole, TenantStatus } from '../../schemas/user-tenant.schema';
+import { TenantStatus } from '../../schemas/user-tenant.schema';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserTenantDto {
@@ -12,14 +12,9 @@ export class CreateUserTenantDto {
   @IsMongoId()
   tenantId: string;
 
-  @ApiProperty({
-    enum: TenantRole,
-    example: TenantRole.MEMBER,
-    required: false,
-  })
-  @IsEnum(TenantRole)
-  @IsOptional()
-  role?: TenantRole;
+  @ApiProperty({ example: '69706169a89bd2f4938514c9' })
+  @IsMongoId()
+  roleId: string;
 
   @ApiProperty({
     enum: TenantStatus,
