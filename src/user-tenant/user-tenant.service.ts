@@ -10,14 +10,35 @@ import {
   UserTenantDocument,
   TenantStatus,
 } from '../schemas/user-tenant.schema';
+// import { TenantRolePermission } from '../schemas/tenant-role-permission.schema';
 import { CreateUserTenantDto } from './dto/create-user-tenant.dto';
 import { UpdateUserTenantDto } from './dto/update-user-tenant.dto';
+// NEW imports for tenant role permission
+import { Role, RoleDocument } from '../schemas/role.schema';
+import { Permission, PermissionDocument } from '../schemas/permission.schema';
+import {
+  TenantRolePermission,
+  TenantRolePermissionDocument,
+} from '../schemas/tenant-role-permission.schema';
 
 @Injectable()
 export class UserTenantService {
+  // constructor(
+  //   @InjectModel(UserTenant.name)
+  //   private readonly userTenantModel: Model<UserTenantDocument>,
+  // ) {}
   constructor(
     @InjectModel(UserTenant.name)
     private readonly userTenantModel: Model<UserTenantDocument>,
+
+    @InjectModel(Role.name)
+    private readonly roleModel: Model<RoleDocument>,
+
+    @InjectModel(Permission.name)
+    private readonly permissionModel: Model<PermissionDocument>,
+
+    @InjectModel(TenantRolePermission.name)
+    private readonly tenantRolePermissionModel: Model<TenantRolePermissionDocument>,
   ) {}
 
   // ✅ Assign user to tenant
@@ -95,6 +116,99 @@ export class UserTenantService {
       })
       .populate('tenantId', 'name domain')
       .populate('roleId', 'name permissionIds');
+  }
+
+  // Add tenant-specific extra permissions to a role
+  async addTenantRolePermissions(
+    tenantId: string,
+    roleId: string,
+    permissionIds: string[],
+  ) {
+    const role = await this.roleModel.findById(roleId);
+    if (!role) throw new NotFoundException('Role not found');
+
+    const validPermissions = await this.permissionModel.find({
+      _id: { $in: permissionIds },
+    });
+    if (validPermissions.length !== permissionIds.length) {
+      throw new ConflictException('Some permissions do not exist in system');
+    }
+
+    let tenantRole = await this.tenantRolePermissionModel.findOne({
+      tenantId,
+      roleId,
+    });
+    if (!tenantRole) {
+      tenantRole = new this.tenantRolePermissionModel({
+        tenantId,
+        roleId,
+        extraPermissionIds: [],
+      });
+    }
+
+    // Only add permissions that aren't already added
+    const currentIds = tenantRole.extraPermissionIds.map((id) => id.toString());
+    for (const pid of permissionIds) {
+      if (!currentIds.includes(pid.toString()))
+        tenantRole.extraPermissionIds.push(pid);
+    }
+
+    return tenantRole.save();
+  }
+
+  // Remove tenant-added permissions
+  async removeTenantRolePermissions(
+    tenantId: string,
+    roleId: string,
+    permissionIds: string[],
+  ) {
+    const tenantRole = await this.tenantRolePermissionModel.findOne({
+      tenantId,
+      roleId,
+    });
+    if (!tenantRole) return null;
+
+    tenantRole.extraPermissionIds = tenantRole.extraPermissionIds.filter(
+      (id) => !permissionIds.includes(id.toString()),
+    );
+
+    return tenantRole.save();
+  }
+
+  // Get effective permissions for a tenant role (global + tenant-added)
+  // async getEffectivePermissions(tenantId: string, roleId: string) {
+  //   const role = await this.roleModel
+  //     .findById(roleId)
+  //     .populate('permissionIds');
+  //   if (!role) throw new NotFoundException('Role not found');
+
+  //   const tenantOverride = await this.tenantRolePermissionModel.findOne({
+  //     tenantId,
+  //     roleId,
+  //   });
+
+  //   const extra = tenantOverride ? tenantOverride.extraPermissionIds : [];
+  //   const effectiveIds = [...role.permissionIds.map((p) => p._id), ...extra];
+
+  //   return this.permissionModel.find({ _id: { $in: effectiveIds } });
+  // }
+  async getEffectivePermissions(tenantId: string, roleId: string) {
+    // Ensure raw ObjectId
+    const rId = typeof roleId === 'object' ? roleId._id : roleId;
+    const tId = typeof tenantId === 'object' ? tenantId._id : tenantId;
+
+    const role = await this.roleModel.findById(rId).populate('permissionIds');
+    if (!role) throw new NotFoundException('Role not found');
+
+    const tenantOverride = await this.tenantRolePermissionModel.findOne({
+      tenantId: tId,
+      roleId: rId,
+    });
+
+    const extra = tenantOverride ? tenantOverride.extraPermissionIds : [];
+    const effectiveIds = [...role.permissionIds.map((p) => p._id), ...extra];
+
+    return this.permissionModel.find({ _id: { $in: effectiveIds } });
   }
 }
 

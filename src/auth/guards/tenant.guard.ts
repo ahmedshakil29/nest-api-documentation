@@ -9,59 +9,110 @@ import { TenantStatus } from '../../schemas/user-tenant.schema';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
-  constructor(private userTenantService: UserTenantService) {}
+  constructor(private readonly userTenantService: UserTenantService) {}
 
-  // async canActivate(context: ExecutionContext): Promise<boolean> {
-  //   const req = context.switchToHttp().getRequest();
-  //   const userId = req.user.sub;
-  //   const tenantId = req.headers['x-tenant-id'];
-
-  //   if (!tenantId) {
-  //     throw new ForbiddenException('Tenant not specified');
-  //   }
-
-  //   const membership = await this.userTenantService.getMembership(
-  //     userId,
-  //     tenantId,
-  //   );
-
-  //   // if (!membership || membership.status !== 'ACTIVE') {
-  //   //   throw new ForbiddenException('Unauthorized tenant');
-  //   // }
-  //   if (!membership || membership.status !== TenantStatus.ACTIVE) {
-  //     throw new ForbiddenException('Unauthorized tenant');
-  //   }
-
-  //   req.tenant = membership; // 🔥 required for PermissionGuard
-  //   return true;
-  // }
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
 
-    if (!req.user) {
-      throw new ForbiddenException('User not authenticated');
-    }
+    if (!req.user) throw new ForbiddenException('User not authenticated');
 
-    const userId = req.user.sub; // JWT payload usually has 'sub' for userId
-    const tenantId = req.headers['x-tenant-id'];
+    const userId = req.user.sub;
+    const tenantIdHeader = req.headers['x-tenant-id'];
 
-    if (!tenantId) {
-      throw new ForbiddenException('Tenant not specified');
-    }
+    if (!tenantIdHeader) throw new ForbiddenException('Tenant not specified');
 
+    // Fetch membership
     const membership = await this.userTenantService.getMembership(
       userId,
-      tenantId,
+      tenantIdHeader,
     );
 
     if (!membership || membership.status !== TenantStatus.ACTIVE) {
       throw new ForbiddenException('Unauthorized tenant');
     }
 
-    req.tenant = membership; // required for PermissionGuard
+    // Always normalize roleId and tenantId to ObjectId string
+    membership.roleId =
+      typeof membership.roleId === 'object' && membership.roleId._id
+        ? membership.roleId._id.toString()
+        : membership.roleId.toString();
+
+    membership.tenantId =
+      typeof membership.tenantId === 'object' && membership.tenantId._id
+        ? membership.tenantId._id.toString()
+        : membership.tenantId.toString();
+
+    // Attach membership to request for PermissionGuard
+    req.tenant = membership;
+
     return true;
   }
 }
+
+// import {
+//   CanActivate,
+//   ExecutionContext,
+//   ForbiddenException,
+//   Injectable,
+// } from '@nestjs/common';
+// import { UserTenantService } from 'src/user-tenant/user-tenant.service';
+// import { TenantStatus } from '../../schemas/user-tenant.schema';
+
+// @Injectable()
+// export class TenantGuard implements CanActivate {
+//   constructor(private userTenantService: UserTenantService) {}
+
+//   // async canActivate(context: ExecutionContext): Promise<boolean> {
+//   //   const req = context.switchToHttp().getRequest();
+//   //   const userId = req.user.sub;
+//   //   const tenantId = req.headers['x-tenant-id'];
+
+//   //   if (!tenantId) {
+//   //     throw new ForbiddenException('Tenant not specified');
+//   //   }
+
+//   //   const membership = await this.userTenantService.getMembership(
+//   //     userId,
+//   //     tenantId,
+//   //   );
+
+//   //   // if (!membership || membership.status !== 'ACTIVE') {
+//   //   //   throw new ForbiddenException('Unauthorized tenant');
+//   //   // }
+//   //   if (!membership || membership.status !== TenantStatus.ACTIVE) {
+//   //     throw new ForbiddenException('Unauthorized tenant');
+//   //   }
+
+//   //   req.tenant = membership; // 🔥 required for PermissionGuard
+//   //   return true;
+//   // }
+//   async canActivate(context: ExecutionContext): Promise<boolean> {
+//     const req = context.switchToHttp().getRequest();
+
+//     if (!req.user) {
+//       throw new ForbiddenException('User not authenticated');
+//     }
+
+//     const userId = req.user.sub; // JWT payload usually has 'sub' for userId
+//     const tenantId = req.headers['x-tenant-id'];
+
+//     if (!tenantId) {
+//       throw new ForbiddenException('Tenant not specified');
+//     }
+
+//     const membership = await this.userTenantService.getMembership(
+//       userId,
+//       tenantId,
+//     );
+
+//     if (!membership || membership.status !== TenantStatus.ACTIVE) {
+//       throw new ForbiddenException('Unauthorized tenant');
+//     }
+
+//     req.tenant = membership; // required for PermissionGuard
+//     return true;
+//   }
+// }
 
 // @Injectable()
 // export class TenantGuard implements CanActivate {

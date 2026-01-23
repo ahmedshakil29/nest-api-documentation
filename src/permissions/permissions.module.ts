@@ -13,6 +13,6 @@ import { Permission, PermissionSchema } from '../schemas/permission.schema';
   ],
   controllers: [PermissionsController],
   providers: [PermissionsService],
-  exports: [PermissionsService],
+  exports: [PermissionsService, MongooseModule],
 })
 export class PermissionsModule {}

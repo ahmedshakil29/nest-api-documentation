@@ -152,7 +152,7 @@ export class AuthService {
       tenants: tenants.map((t) => ({
         tenantId: t.tenantId._id.toString(),
         tenantName: t.tenantId.name,
-        role: t.roleId.name,
+        role: t.roleId.name || null,
         status: t.status,
       })),
       defaultTenant: tenants[0]?.tenantId._id.toString() || null,

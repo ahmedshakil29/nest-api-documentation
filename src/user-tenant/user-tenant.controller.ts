@@ -66,6 +66,70 @@ export class UserTenantController {
   ) {
     return this.service.getMembership(userId, tenantId);
   }
+
+  // Add extra permissions to a role in a tenant
+  // @Post(':tenantId/:roleId/add-permissions')
+  // @UseGuards(JwtAuthGuard, TenantGuard, PermissionGuard)
+  // @RequirePermission('manage_role_custom_permissions') // create a new permission key
+  // addTenantRolePermissions(
+  //   @Param('tenantId') tenantId: string,
+  //   @Param('roleId') roleId: string,
+  //   @Body('permissionIds') permissionIds: string[],
+  // ) {
+  //   return this.service.addTenantRolePermissions(
+  //     tenantId,
+  //     roleId,
+  //     permissionIds,
+  //   );
+  // }
+  @Post('roles/:roleId/add-permissions')
+  @UseGuards(JwtAuthGuard, TenantGuard, PermissionGuard)
+  @RequirePermission('manage_role_custom_permissions')
+  addTenantRolePermissions(
+    @Req() req,
+    @Param('roleId') roleId: string,
+    @Body('permissionIds') permissionIds: string[],
+  ) {
+    const tenantId = req.headers['x-tenant-id'];
+
+    return this.service.addTenantRolePermissions(
+      tenantId,
+      roleId,
+      permissionIds,
+    );
+  }
+
+  // Remove tenant-added permissions from a role
+  // @Delete(':tenantId/:roleId/remove-permissions')
+  // @UseGuards(JwtAuthGuard, TenantGuard, PermissionGuard)
+  // @RequirePermission('manage_role_custom_permissions')
+  // removeTenantRolePermissions(
+  //   @Param('tenantId') tenantId: string,
+  //   @Param('roleId') roleId: string,
+  //   @Body('permissionIds') permissionIds: string[],
+  // ) {
+  //   return this.service.removeTenantRolePermissions(
+  //     tenantId,
+  //     roleId,
+  //     permissionIds,
+  //   );
+  // }
+  @Delete('roles/:roleId/remove-permissions')
+  @UseGuards(JwtAuthGuard, TenantGuard, PermissionGuard)
+  @RequirePermission('manage_role_custom_permissions')
+  removeTenantRolePermissions(
+    @Req() req,
+    @Param('roleId') roleId: string,
+    @Body('permissionIds') permissionIds: string[],
+  ) {
+    const tenantId = req.headers['x-tenant-id'];
+
+    return this.service.removeTenantRolePermissions(
+      tenantId,
+      roleId,
+      permissionIds,
+    );
+  }
 }
 
 // import {
