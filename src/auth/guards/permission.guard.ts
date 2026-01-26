@@ -15,13 +15,52 @@ export class PermissionGuard implements CanActivate {
     private readonly userTenantService: UserTenantService,
   ) {}
 
+  // async canActivate(context: ExecutionContext): Promise<boolean> {
+  //   const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
+  //     PERMISSIONS_KEY,
+  //     [context.getHandler(), context.getClass()],
+  //   );
+
+  //   if (!requiredPermissions || requiredPermissions.length === 0) return true;
+
+  //   const req = context.switchToHttp().getRequest();
+  //   const membership = req.tenant;
+
+  //   if (!membership?.roleId || !membership?.tenantId) {
+  //     throw new ForbiddenException('Role or Tenant not found');
+  //   }
+
+  //   // Fetch effective permissions (global + tenant-added)
+  //   const effectivePermissions =
+  //     await this.userTenantService.getEffectivePermissions(
+  //       membership.tenantId,
+  //       membership.roleId,
+  //     );
+
+  //   // Extract permission keys safely
+  //   const permissionKeys = effectivePermissions.map((p) =>
+  //     typeof p === 'object' && p.key ? p.key : p.toString(),
+  //   );
+
+  //   const hasPermission = requiredPermissions.every((perm) =>
+  //     permissionKeys.includes(perm),
+  //   );
+
+  //   if (!hasPermission) {
+  //     throw new ForbiddenException('Insufficient permissions');
+  //   }
+
+  //   return true;
+  // }
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
+    const meta = this.reflector.getAllAndOverride<PermissionMeta>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiredPermissions || requiredPermissions.length === 0) return true;
+    if (!meta) return true;
+
+    const { permissions, mode } = meta;
 
     const req = context.switchToHttp().getRequest();
     const membership = req.tenant;
@@ -30,21 +69,20 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('Role or Tenant not found');
     }
 
-    // Fetch effective permissions (global + tenant-added)
     const effectivePermissions =
       await this.userTenantService.getEffectivePermissions(
         membership.tenantId,
         membership.roleId,
       );
 
-    // Extract permission keys safely
     const permissionKeys = effectivePermissions.map((p) =>
       typeof p === 'object' && p.key ? p.key : p.toString(),
     );
 
-    const hasPermission = requiredPermissions.every((perm) =>
-      permissionKeys.includes(perm),
-    );
+    const hasPermission =
+      mode === 'AND'
+        ? permissions.every((p) => permissionKeys.includes(p))
+        : permissions.some((p) => permissionKeys.includes(p));
 
     if (!hasPermission) {
       throw new ForbiddenException('Insufficient permissions');

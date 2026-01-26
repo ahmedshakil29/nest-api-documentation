@@ -22,8 +22,13 @@ import { RequirePermission } from '../auth/decorators/require-permission.decorat
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
+  // @Post()
+  // @RequirePermission('category.create')
+  // create(@Req() req, @Body() dto: CreateCategoryDto) {
+  //   return this.categoriesService.create(req.tenant.tenantId, dto);
+  //  }
   @Post()
-  @RequirePermission('category.create')
+  @RequirePermission(['category.create', 'category.manage'], 'OR')
   create(@Req() req, @Body() dto: CreateCategoryDto) {
     return this.categoriesService.create(req.tenant.tenantId, dto);
   }
